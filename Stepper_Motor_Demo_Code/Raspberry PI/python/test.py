@@ -4,9 +4,11 @@ from DRV8825 import DRV8825
 
 
 try:
-    Motor1 = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(16, 17, 20))
-    Motor2 = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(21, 22, 27))
-    
+    Motor1 = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
+    Motor2 = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(3, 4, 5))
+    #Motor1 = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(16, 17, 20))
+    #Motor2 = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(21, 22, 27))
+
     """
     # 1.8 degree: nema23, nema14
     # softward Control :
@@ -18,9 +20,9 @@ try:
     # '1/32step': A cycle = 200 * 32 steps
     """
     Motor1.SetMicroStep('softward','fullstep')
-    Motor1.TurnStep(Dir='forward', steps=200, stepdelay = 0.005)
+    Motor1.TurnStep(Dir='forward', steps=100, stepdelay = 0.005)
     time.sleep(0.5)
-    Motor1.TurnStep(Dir='backward', steps=400, stepdelay = 0.005)
+    Motor1.TurnStep(Dir='backward', steps=200, stepdelay = 0.005)
     Motor1.Stop()
     
     """
@@ -33,10 +35,10 @@ try:
     # '1/16step': A cycle = 2048 * 16 steps
     # '1/32step': A cycle = 2048 * 32 steps
     """
-    Motor2.SetMicroStep('hardward' ,'halfstep')    
-    Motor2.TurnStep(Dir='forward', steps=2048, stepdelay=0.002)
+    Motor2.SetMicroStep('softward' ,'fullstep')    
+    Motor2.TurnStep(Dir='forward', steps=200, stepdelay=0.002)
     time.sleep(0.5)
-    Motor2.TurnStep(Dir='backward', steps=2048, stepdelay=0.002)
+    Motor2.TurnStep(Dir='backward', steps=400, stepdelay=0.002)
     Motor2.Stop()
     
 except:
