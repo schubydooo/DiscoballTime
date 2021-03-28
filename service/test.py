@@ -5,11 +5,11 @@ from DRV8825 import DRV8825
 MOTOR_UP = "up"
 MOTOR_DOWN = "down"
 
-def revolutions_to_steps(revolution_count):
+def revolutions_to_steps(revolution_count, steps_per_revolution=200):
     '''
     Returns the # of steps necessary for that revolutions, based on the hardware set cycle of 200 steps/revolution
     '''
-    return revolution_count * 200
+    return revolution_count * steps_per_revolution
 
 try:
     stepDelay = 0.001
