@@ -1,0 +1,9 @@
+root_ca: /home/pi/certs/Amazon-root-CA-1.pem
+cert: /home/pi/certs/device.pem.crt
+priv_key: /home/pi/certs/private.pem.key
+pub_key: /home/pi/certs/public.pem.key
+
+thing_endpoint: a2cu3nec9xctuz-ats.iot.us-west-2.amazonaws.com
+client_id: discoPi
+
+topic: discoPi/+
