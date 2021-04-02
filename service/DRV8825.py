@@ -42,7 +42,7 @@ class DRV8825():
         '''
         self.digital_write(self.enable_pin, 0)
             
-    def TurnStep(self, direction, steps, stepDelay=0.001):
+    def TurnStep(self, direction, steps, stepDelay=0.003):
         '''
         Set direction and turn the motor the prescribed number of steps
         '''

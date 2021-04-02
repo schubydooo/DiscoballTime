@@ -108,20 +108,20 @@ def raise_discoball():
 def control_motor(payload):
     payload = json.loads(payload)
     try: 
-        motor = payload['motor']
+        motor = payload['motor_number']
         revolutions = payload['revolutions']
-        direction = payload['direction']
+        direction = payload['motor_direction']
 
         # Set motor
-        if payload['motor'] == 'Motor1':
+        if motor == 1:
             Motor = Motor1
-        elif payload['motor'] == 'Motor2':
+        elif motor == 2:
             Motor = Motor2
         else:
             raise TypeError(f"Payload 'motor' was {payload['motor']}, but needs to be either 'Motor1' or 'Motor2'")
 
         # Move motor
-        Motor.TurnStep(direction=direction, steps=revolutions_to_steps(revolutions))
+        Motor.TurnStep(direction=direction, steps=revolutions_to_steps(int(revolutions)))
 
     except:
         logger.error("Issue parsing payload")
