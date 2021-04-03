@@ -1,19 +1,14 @@
-import argparse
-from awscrt import io, mqtt, auth, http
-from awsiot import mqtt_connection_builder
 import sys
-import threading
-import time
-
-
 import yaml
 import json
-from types import SimpleNamespace
-import logging
-
-import RPi.GPIO as GPIO
 import time
+import logging
+import argparse
+import RPi.GPIO as GPIO
 from DRV8825 import DRV8825
+from types import SimpleNamespace
+from awscrt import io, mqtt, auth, http
+from awsiot import mqtt_connection_builder
 
 # This sample uses the Message Broker for AWS IoT to send and receive messages
 # through an MQTT connection. On startup, the device connects to the server,
@@ -26,9 +21,6 @@ from DRV8825 import DRV8825
 
 MOTOR_UP = "up"
 MOTOR_DOWN = "down"
-
-received_count = 0
-received_all_event = threading.Event()
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -129,7 +121,7 @@ def control_motor(payload):
 if __name__ == '__main__':
 
     # Read in config
-    with open("config.yaml", "r") as ymlfile:
+    with open("/home/pi/DiscoballTime/service/config.yaml", "r") as ymlfile:
         cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
 
     # Spin up resources

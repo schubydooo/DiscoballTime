@@ -28,3 +28,9 @@ create a thing (download .pem) and attach policy to the corresponding certificat
 drops certs in it's own dir
 
 Now the thing can securely communicate with aws iot core
+
+In order to autorun the script at start:
+https://www.raspberrypi.org/documentation/linux/usage/systemd.md
+
+``` sudo systemctl stop discoball.service```
+sudo cp DiscoballTime/discoball.service /etc/systemd/system/discoball.service
