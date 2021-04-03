@@ -29,8 +29,30 @@ drops certs in it's own dir
 
 Now the thing can securely communicate with aws iot core
 
-In order to autorun the script at start:
+#### In order to autorun the script at start:
 https://www.raspberrypi.org/documentation/linux/usage/systemd.md
 
 ``` sudo systemctl stop discoball.service```
-sudo cp DiscoballTime/discoball.service /etc/systemd/system/discoball.service
+sudo cp /home/pi/DiscoballTime/discoball.service /etc/systemd/system/discoball.service
+
+alias discoSync="sudo cp /home/pi/DiscoballTime/discoball.service /etc/systemd/system/discoball.service && sleep 1 && sudo systemctl daemon-reload"
+alias discoStatus="sudo systemctl status discoball.service"
+alias discoStart="sudo systemctl start discoball.service"
+alias discoStop="sudo systemctl stop discoball.service"
+alias discoReset="echo 'syncing service...' && discoSync && echo 'stopping...' && discoStop && sleep 2 && echo 'starting...' && discoStart && sleep 3 && discoStatus"
+
+these are nice helper functions saved to: nano ~/.bash_aliases
+
+
+
+
+## The Story 
+
+Discoball bought 
+Raspberry pi chosen 
+Motor selection difficult (Fred can fill in more here) 
+    * Stepper motors chosen for their precision
+    * Motor power driver, be able to move sufficient weight 
+Motor can hold weight if left 'on', but without leaving the magnet spinning it cannot hold more than a few pounds of pressure
+    * Debated  adding another motor to act as a clamp, or another electric system which would engage a ratchet which would leverage a mechanical system to hold the weight up, or a complex mechanical system so that only one motor does the door/discoball and the 2nd motor could act as a clamp
+    * Ended up adding a counter balance component to the discoball so that the effective torque on the motor is 0
