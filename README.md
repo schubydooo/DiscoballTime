@@ -56,3 +56,9 @@ Motor selection difficult (Fred can fill in more here)
 Motor can hold weight if left 'on', but without leaving the magnet spinning it cannot hold more than a few pounds of pressure
     * Debated  adding another motor to act as a clamp, or another electric system which would engage a ratchet which would leverage a mechanical system to hold the weight up, or a complex mechanical system so that only one motor does the door/discoball and the 2nd motor could act as a clamp
     * Ended up adding a counter balance component to the discoball so that the effective torque on the motor is 0
+
+
+
+#### final setup Notes 
+
+Quite a bit of work to integrate into controlling the tp-link kasa smart plug 

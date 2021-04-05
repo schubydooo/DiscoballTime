@@ -5,7 +5,7 @@
 # session persistence, api calls, and more.
 # This sample is built using the handler classes approach in skill builder.
 import logging
-import ask_sdk_core.utils as ask_utils
+import ask_sdk_core.utils as alexa
 # from awscrt import io, mqtt, auth, http
 # from awsiot import mqtt_connection_builder
 import boto3
@@ -29,7 +29,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
 
-        return ask_utils.is_request_type("LaunchRequest")(handler_input)
+        return alexa.is_request_type("LaunchRequest")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
@@ -55,17 +55,17 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
             "revolutions": Int > 0
         }
         '''
-        return ask_utils.is_intent_name("ControlMotorIntent")(handler_input)
+        return alexa.is_intent_name("ControlMotorIntent")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        logger.info("Handling ControlMotorIntent")
-        logger.info(handler_input)
+        logger.info("Handling ControlMotorIntent...")
+        logger.info(f"userId: {alexa.get_user_id(handler_input=handler_input)}")
         
         # Extract params
-        motor_number = ask_utils.get_slot_value(handler_input=handler_input, slot_name="motor_number")
-        motor_direction = ask_utils.get_slot_value(handler_input=handler_input, slot_name="motor_direction")
-        revolutions = ask_utils.get_slot_value(handler_input=handler_input, slot_name="revolutions")
+        motor_number = alexa.get_slot_value(handler_input=handler_input, slot_name="motor_number")
+        motor_direction = alexa.get_slot_value(handler_input=handler_input, slot_name="motor_direction")
+        revolutions = alexa.get_slot_value(handler_input=handler_input, slot_name="revolutions")
         logger.info(f"motor_number: {motor_number}.  motor_direction: {motor_direction}.    revolutions: {revolutions}")
         
         # Validate input
@@ -74,11 +74,11 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
             invalid.append("motor number")
         if motor_direction not in ['up', 'down']:
             invalid.append("motor direction")
-        if int(revolutions) < 0 or int(revolutions) > 100:
-            invalid.append("revolutions")
+        if int(revolutions) < 0 or int(revolutions) > 25:
+            invalid.append("revolution count")
 
         if len(invalid) > 0:
-            speak_output = "I'm sorry, that is not a valid"
+            speak_output = "Sorry homie, that is not a valid"
             for val in invalid:
                 speak_output += f" {val}"
         else:
@@ -109,7 +109,7 @@ class HelpIntentHandler(AbstractRequestHandler):
     """Handler for Help Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
-        return ask_utils.is_intent_name("AMAZON.HelpIntent")(handler_input)
+        return alexa.is_intent_name("AMAZON.HelpIntent")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
@@ -127,8 +127,8 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
     """Single handler for Cancel and Stop Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
-        return (ask_utils.is_intent_name("AMAZON.CancelIntent")(handler_input) or
-                ask_utils.is_intent_name("AMAZON.StopIntent")(handler_input))
+        return (alexa.is_intent_name("AMAZON.CancelIntent")(handler_input) or
+                alexa.is_intent_name("AMAZON.StopIntent")(handler_input))
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
@@ -145,7 +145,7 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
     """Handler for Session End."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
-        return ask_utils.is_request_type("SessionEndedRequest")(handler_input)
+        return alexa.is_request_type("SessionEndedRequest")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
@@ -163,11 +163,11 @@ class IntentReflectorHandler(AbstractRequestHandler):
     """
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
-        return ask_utils.is_request_type("IntentRequest")(handler_input)
+        return alexa.is_request_type("IntentRequest")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        intent_name = ask_utils.get_intent_name(handler_input)
+        intent_name = alexa.get_intent_name(handler_input)
         speak_output = "You just triggered " + intent_name + "."
 
         return (

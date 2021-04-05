@@ -121,7 +121,7 @@ def control_motor(payload):
 if __name__ == '__main__':
 
     # Read in config
-    with open("/home/pi/DiscoballTime/service/config.yaml", "r") as ymlfile:
+    with open("config.yaml", "r") as ymlfile:
         cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
 
     # Spin up resources
