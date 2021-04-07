@@ -107,8 +107,8 @@ def control_motor(payload):
         # Set motor
         if motor == 1:
             Motor = Motor1
-        elif motor == 2:
-            Motor = Motor2
+        elif motor == 3:
+            Motor = Motor3
         else:
             raise TypeError(f"Payload 'motor' was {payload['motor']}, but needs to be either 'Motor1' or 'Motor2'")
 
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     # Spin up resources
     Motor1 = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
-    Motor2 = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(3, 4, 5))
+    Motor3 = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(3, 4, 5))
 
     io.init_logging(getattr(io.LogLevel, io.LogLevel.NoLogs.name), 'stderr')
     event_loop_group = io.EventLoopGroup(1)
