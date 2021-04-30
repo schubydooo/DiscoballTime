@@ -62,3 +62,12 @@ Motor can hold weight if left 'on', but without leaving the magnet spinning it c
 #### final setup Notes 
 
 Quite a bit of work to integrate into controlling the tp-link kasa smart plug 
+
+
+
+https://python-kasa.readthedocs.io/en/latest/
+
+
+
+NOTE TO SELF:   
+Add a thread locked variable in order to change states between raised and lower

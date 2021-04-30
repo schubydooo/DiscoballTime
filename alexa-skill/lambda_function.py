@@ -43,6 +43,71 @@ class LaunchRequestHandler(AbstractRequestHandler):
         )
 
 
+class LowerDiscoballIntentHandler(AbstractRequestHandler):
+    """Handler for Lower Discoball Intent."""
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        '''
+        Expecting payload like the following... #TODO
+        '''
+        return alexa.is_intent_name("LowerDiscoballIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        logger.info("Handling LowerDiscoballIntent...")
+    
+        # Send command to IoT Core
+        iot_client = boto3.client('iot-data', region_name='us-west-2', endpoint_url=ENDPOINT_URL)
+        payload = {
+            "intent": "LowerDiscoball"
+        }
+        # Change topic, qos and payload
+        response = iot_client.publish(
+                topic='discoPi/LowerDiscoball',
+                qos=1,
+                payload=json.dumps(payload)
+            )
+
+        speak_output = "ahhhhhh right, get dancin fellers"
+                
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .response
+        )
+
+class RaiseDiscoballIntentHandler(AbstractRequestHandler):
+    """Handler for Raise Discoball Intent."""
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        '''
+        Expecting payload like the following... #TODO
+        '''
+        return alexa.is_intent_name("RaiseDiscoballIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        logger.info("Handling RaiseDiscoballIntent...")
+    
+        # Send command to IoT Core
+        iot_client = boto3.client('iot-data', region_name='us-west-2', endpoint_url=ENDPOINT_URL)
+        payload = {
+            "intent": "RaiseDiscoball"
+        }
+        # Change topic, qos and payload
+        response = iot_client.publish(
+                topic='discoPi/RaiseDiscoball',
+                qos=1,
+                payload=json.dumps(payload)
+            )
+        speak_output = "ahh, you could keep groovin"
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .response
+        )
+
 class ControlMotorIntentHandler(AbstractRequestHandler):
     """Handler for Control Motor Intent."""
     def can_handle(self, handler_input):
@@ -70,7 +135,7 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
         
         # Validate input
         invalid = []
-        if motor_number not in ["1","2"]:
+        if motor_number not in ["1","3"]:
             invalid.append("motor number")
         if motor_direction not in ['up', 'down']:
             invalid.append("motor direction")
@@ -84,6 +149,7 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
         else:
             speak_output = "Yes shaudy!"
 
+            # Send command to IoT Core
             iot_client = boto3.client('iot-data', region_name='us-west-2', endpoint_url=ENDPOINT_URL)
             payload = {
                 "motor_number": int(motor_number),
@@ -92,11 +158,10 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
             }
             # Change topic, qos and payload
             response = iot_client.publish(
-                    topic='discoPi/controlMotor',
+                    topic='discoPi/ControlMotor',
                     qos=1,
                     payload=json.dumps(payload)
                 )
-
         
         return (
             handler_input.response_builder
@@ -209,6 +274,8 @@ sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(ControlMotorIntentHandler())
+sb.add_request_handler(LowerDiscoballIntentHandler())
+sb.add_request_handler(RaiseDiscoballIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())

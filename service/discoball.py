@@ -9,6 +9,7 @@ from DRV8825 import DRV8825
 from types import SimpleNamespace
 from awscrt import io, mqtt, auth, http
 from awsiot import mqtt_connection_builder
+from KasaControl import KasaStrip
 
 # This sample uses the Message Broker for AWS IoT to send and receive messages
 # through an MQTT connection. On startup, the device connects to the server,
@@ -21,6 +22,14 @@ from awsiot import mqtt_connection_builder
 
 MOTOR_UP = "up"
 MOTOR_DOWN = "down"
+
+# Read in config
+with open("config.yaml", "r") as ymlfile:
+    cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
+
+POWER_STRIP_NAME = cfg.power_strip_name
+DISCOLIGHTS_PLUG_NAME = cfg.discolights_plug_name
+DISCOBALL_PLUG_NAME = cfg.discoball_plug_name
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -73,29 +82,56 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     '''
     logger.info(f"MSG: Topic={topic}")
 
-    if topic == 'discoPi/lower':
+    if topic == 'discoPi/LowerDiscoball':
         logger.info(f"\tLowering discoball...")
         lower_discoball()
-    elif topic == 'discoPi/raise':
+    elif topic == 'discoPi/RaiseDiscoball':
         logger.info(f"\tRaising discoball...")
         raise_discoball()
-    elif topic == 'discoPi/controlMotor':
+    elif topic == 'discoPi/ControlMotor':
         logger.info(f"\tPayload: {json.loads(payload)}")
         control_motor(payload)
     else:
         logger.error("Unimplemented topic")
 
 def lower_discoball():
+    '''
+    Command to lower the discoball
+    '''
+    # Init Kasa smart strip 
+    smartPlugs = KasaStrip(DISCOLIGHTS_PLUG_NAME, DISCOBALL_PLUG_NAME, POWER_STRIP_NAME)
+
+    # Turn on lights
+    smartPlugs.turn_on_plug(smartPlugs.discolight_plug)
+
+    # Motor functions to lower the discoball
     Motor1.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
     Motor1.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
+    Motor3.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
+    Motor3.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
+
+    # Start spinning the discoball
+    smartPlugs.turn_on_plug(smartPlugs.discoball_plug)
 
 def raise_discoball():
+    '''
+    Command to raise the discoball 
+    '''
+    # Init Kasa smart strip 
+    smartPlugs = KasaStrip(DISCOLIGHTS_PLUG_NAME, DISCOBALL_PLUG_NAME, POWER_STRIP_NAME)
+
+    # Stop spinning the discoball
+    smartPlugs.turn_off_plug(smartPlugs.discoball_plug)
+
     Motor1.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
     Motor1.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
+    Motor3.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
+    Motor3.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
+
+    # Turn off the lights
+    smartPlugs.turn_off_plug(smartPlugs.discolight_plug)
+
+
 
 def control_motor(payload):
     payload = json.loads(payload)
@@ -117,12 +153,21 @@ def control_motor(payload):
 
     except:
         logger.error("Issue parsing payload")
+    
 
 if __name__ == '__main__':
 
     # Read in config
     with open("config.yaml", "r") as ymlfile:
         cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
+
+    global power_strip_name
+    global discolights_plug_name
+    global discoball_plug_name 
+
+    power_strip_name = cfg.power_strip_name
+    discolights_plug_name = cfg.discolights_plug_name
+    discoball_plug_name = cfg.discoball_plug_name
 
     # Spin up resources
     Motor1 = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
@@ -179,3 +224,5 @@ if __name__ == '__main__':
         Motor1.Stop()
         Motor2.Stop()
         GPIO.cleanup()
+
+

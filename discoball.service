@@ -3,7 +3,7 @@ Description=My Discoball Service
 After=network-online.target syslog.target multi-user.target
 
 [Service]
-ExecStartPre=/bin/sleep 1
+ExecStartPre=/bin/sleep 2
 ExecStart=/usr/bin/python3 discoball.py
 WorkingDirectory=/home/pi/DiscoballTime/service
 StandardOutput=inherit
