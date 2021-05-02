@@ -67,7 +67,7 @@ class DRV8825():
             time.sleep(stepDelay)
             self.digital_write(self.step_pin, 0)
             time.sleep(stepDelay)
-        self.Stop()
+        # self.Stop() #Optionally turn off the motor here.  For our use case it was better to manually control this 
 
     def SetMicroStep(self, mode, stepFormat):
         """
