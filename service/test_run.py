@@ -6,12 +6,12 @@ lock = threading.Lock()
 
 def lower_discoball():
     Motor1.TurnStep(direction='up', steps=1775)
-    Motor3.TurnStep(direction='up', steps=1150)
+    Motor3.TurnStep(direction='up', steps=1175)
     Motor1.TurnStep(direction='down', steps=3800)
 
 def raise_discoball():
     Motor1.TurnStep(direction='up', steps=3800)
-    Motor3.TurnStep(direction='down', steps=1150)
+    Motor3.TurnStep(direction='down', steps=1175)
     Motor1.TurnStep(direction='down', steps=1775)
 
 # Spin up resources

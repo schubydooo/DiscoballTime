@@ -133,15 +133,16 @@ def lower_discoball():
     # Init Kasa smart strip 
     smartPlugs = KasaStrip(DISCOLIGHTS_PLUG_NAME, DISCOBALL_PLUG_NAME, POWER_STRIP_NAME)
 
-    # Turn on lights
-    smartPlugs.turn_on_plug(smartPlugs.discolight_plug)
-
     # Motor functions to lower the discoball
     DiscoballMotor.Start()
     TrapdoorMotor.Start()
 
     DiscoballMotor.TurnStep(direction=MOTOR_UP, steps=1775)
-    TrapdoorMotor.TurnStep(direction=MOTOR_UP, steps=1150)
+    TrapdoorMotor.TurnStep(direction=MOTOR_UP, steps=1175)
+
+    # Turn on lights
+    smartPlugs.turn_on_plug(smartPlugs.discolight_plug)
+
     DiscoballMotor.TurnStep(direction=MOTOR_DOWN, steps=3800)
 
     DiscoballMotor.Stop()
@@ -165,14 +166,16 @@ def raise_discoball():
     TrapdoorMotor.Start()
 
     DiscoballMotor.TurnStep(direction=MOTOR_UP, steps=3800)
-    TrapdoorMotor.TurnStep(direction=MOTOR_DOWN, steps=1150)
+    TrapdoorMotor.TurnStep(direction=MOTOR_DOWN, steps=1175)
+
+    # Turn off the lights
+    smartPlugs.turn_off_plug(smartPlugs.discolight_plug)
+
     DiscoballMotor.TurnStep(direction=MOTOR_DOWN, steps=1775)
 
     DiscoballMotor.Stop()
     TrapdoorMotor.Stop()
 
-    # Turn off the lights
-    smartPlugs.turn_off_plug(smartPlugs.discolight_plug)
 
 
 def control_motor(payload):
