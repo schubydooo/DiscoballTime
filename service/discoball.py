@@ -102,11 +102,12 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     lock.acquire()
     if topic == 'discoPi/LowerDiscoball':
         cur_state = get_discoball_state()
-        if cur_state != "lowered"
+        if cur_state != "lowered":
             logger.info(f"\tLowering discoball...")
             lower_discoball()
             write_discoball_state("lowered")
-        else logger.info("Not lowering the discoball as our state says we're already there")
+        else:
+            logger.info("Not lowering the discoball as our state says we're already there")
 
     elif topic == 'discoPi/RaiseDiscoball':
         cur_state = get_discoball_state()
@@ -114,7 +115,8 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
             logger.info(f"\tRaising discoball...")
             raise_discoball()
             write_discoball_state("raised")
-        else logger.info("Not raising the discoball as our state says we're already there")
+        else:
+            logger.info("Not raising the discoball as our state says we're already there")
 
     elif topic == 'discoPi/ControlMotor':
         logger.info(f"\tPayload: {json.loads(payload)}")
@@ -173,7 +175,6 @@ def raise_discoball():
     smartPlugs.turn_off_plug(smartPlugs.discolight_plug)
 
 
-
 def control_motor(payload):
     payload = json.loads(payload)
     try: 
@@ -201,6 +202,14 @@ if __name__ == '__main__':
     # Read in config
     with open("config.yaml", "r") as ymlfile:
         cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
+
+    # global power_strip_name
+    # global discolights_plug_name
+    # global discoball_plug_name 
+
+    # power_strip_name = cfg.power_strip_name
+    # discolights_plug_name = cfg.discolights_plug_name
+    # discoball_plug_name = cfg.discoball_plug_name
 
     # Spin up resources & init IoT endpoint
     DiscoballMotor = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
@@ -256,7 +265,7 @@ if __name__ == '__main__':
         # Reset Motors
         logger.info ("Stopping motors & resetting GPIO")
         DiscoballMotor.Stop()
-        Motor2.Stop()
+        TrapdoorMotor.Stop()
         GPIO.cleanup()
         logger.info ("All done - keep on groovin'")
 
