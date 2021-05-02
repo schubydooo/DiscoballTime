@@ -1,19 +1,16 @@
-import argparse
-from awscrt import io, mqtt, auth, http
-from awsiot import mqtt_connection_builder
 import sys
-import threading
-import time
-
-
 import yaml
 import json
-from types import SimpleNamespace
-import logging
-
-import RPi.GPIO as GPIO
 import time
+import logging
+import argparse
+import RPi.GPIO as GPIO
 from DRV8825 import DRV8825
+from types import SimpleNamespace
+from awscrt import io, mqtt, auth, http
+from awsiot import mqtt_connection_builder
+from KasaControl import KasaStrip
+import threading
 
 # This sample uses the Message Broker for AWS IoT to send and receive messages
 # through an MQTT connection. On startup, the device connects to the server,
@@ -21,14 +18,6 @@ from DRV8825 import DRV8825
 # The device should receive those same messages back from the message broker,
 # since it is subscribed to that same topic.
 
-# Using globals to simplify sample code
-
-
-MOTOR_UP = "up"
-MOTOR_DOWN = "down"
-
-received_count = 0
-received_all_event = threading.Event()
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -37,7 +26,35 @@ logging.basicConfig(
     )
 logger = logging.getLogger()
 
+# Globals
+MOTOR_UP = "up"
+MOTOR_DOWN = "down"
+discoball_status_filename = "discoball_state.txt" 
 
+with open("config.yaml", "r") as ymlfile:
+    cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
+
+POWER_STRIP_NAME = cfg.power_strip_name
+DISCOLIGHTS_PLUG_NAME = cfg.discolights_plug_name
+DISCOBALL_PLUG_NAME = cfg.discoball_plug_name
+
+lock = threading.Lock()
+
+def get_discoball_state():
+    '''
+    Retrieve the current state of the discoball
+    '''
+    with open(discoball_status_filename, "r") as state_file:
+        discoball_state = state_file.read()
+    return discoball_state
+
+def write_discoball_state(status):
+    '''
+    Write the status of the discoball position to the file
+    '''
+    with open(discoball_status_filename, "w") as state_file:
+        state_file.write(status)
+    
 def revolutions_to_steps(revolution_count, steps_per_revolution=200):
     '''
     Returns the # of steps necessary for that revolutions, based on the hardware set cycle of 200 steps/revolution
@@ -80,51 +97,108 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     Callback when the subscribed topic receives a message
     '''
     logger.info(f"MSG: Topic={topic}")
+    
+    # Use a lock to ensure we only handle incoming requests one at a time
+    lock.acquire()
+    if topic == 'discoPi/LowerDiscoball':
+        cur_state = get_discoball_state()
+        if cur_state != "lowered":
+            logger.info(f"\tLowering discoball...")
+            lower_discoball()
+            write_discoball_state("lowered")
+        else:
+            logger.info("Not lowering the discoball as our state says we're already there")
 
-    if topic == 'discoPi/lower':
-        logger.info(f"\tLowering discoball...")
-        lower_discoball()
-    elif topic == 'discoPi/raise':
-        logger.info(f"\tRaising discoball...")
-        raise_discoball()
-    elif topic == 'discoPi/controlMotor':
+    elif topic == 'discoPi/RaiseDiscoball':
+        cur_state = get_discoball_state()
+        if cur_state != "raised":
+            logger.info(f"\tRaising discoball...")
+            raise_discoball()
+            write_discoball_state("raised")
+        else:
+            logger.info("Not raising the discoball as our state says we're already there")
+
+    elif topic == 'discoPi/ControlMotor':
         logger.info(f"\tPayload: {json.loads(payload)}")
         control_motor(payload)
     else:
         logger.error("Unimplemented topic")
 
+    lock.release()
+
 def lower_discoball():
-    Motor1.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
-    Motor1.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
+    '''
+    Command to lower the discoball
+    '''
+    # Init Kasa smart strip 
+    smartPlugs = KasaStrip(DISCOLIGHTS_PLUG_NAME, DISCOBALL_PLUG_NAME, POWER_STRIP_NAME)
+
+    # Motor functions to lower the discoball
+    DiscoballMotor.Start()
+    TrapdoorMotor.Start()
+
+    DiscoballMotor.TurnStep(direction=MOTOR_UP, steps=1775)
+    TrapdoorMotor.TurnStep(direction=MOTOR_UP, steps=1175)
+
+    # Turn on lights
+    smartPlugs.turn_on_plug(smartPlugs.discolight_plug)
+
+    DiscoballMotor.TurnStep(direction=MOTOR_DOWN, steps=3800)
+
+    DiscoballMotor.Stop()
+    TrapdoorMotor.Stop()
+
+    # Start spinning the discoball
+    smartPlugs.turn_on_plug(smartPlugs.discoball_plug)
 
 def raise_discoball():
-    Motor1.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
-    Motor1.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_UP, steps=revolutions_to_steps(1))
-    Motor2.TurnStep(direction=MOTOR_DOWN, steps=revolutions_to_steps(1))
+    '''
+    Command to raise the discoball 
+    '''
+    # Init Kasa smart strip 
+    smartPlugs = KasaStrip(DISCOLIGHTS_PLUG_NAME, DISCOBALL_PLUG_NAME, POWER_STRIP_NAME)
+
+    # Stop spinning the discoball
+    smartPlugs.turn_off_plug(smartPlugs.discoball_plug)
+
+    # Motor controls
+    DiscoballMotor.Start()
+    TrapdoorMotor.Start()
+
+    DiscoballMotor.TurnStep(direction=MOTOR_UP, steps=3800)
+    TrapdoorMotor.TurnStep(direction=MOTOR_DOWN, steps=1175)
+
+    # Turn off the lights
+    smartPlugs.turn_off_plug(smartPlugs.discolight_plug)
+
+    DiscoballMotor.TurnStep(direction=MOTOR_DOWN, steps=1775)
+
+    DiscoballMotor.Stop()
+    TrapdoorMotor.Stop()
+
+
 
 def control_motor(payload):
     payload = json.loads(payload)
     try: 
-        motor = payload['motor']
+        motor = payload['motor_number']
         revolutions = payload['revolutions']
-        direction = payload['direction']
+        direction = payload['motor_direction']
 
         # Set motor
-        if payload['motor'] == 'Motor1':
-            Motor = Motor1
-        elif payload['motor'] == 'Motor2':
-            Motor = Motor2
+        if motor == 1:
+            Motor = DiscoballMotor
+        elif motor == 3:
+            Motor = TrapdoorMotor
         else:
-            raise TypeError(f"Payload 'motor' was {payload['motor']}, but needs to be either 'Motor1' or 'Motor2'")
+            raise TypeError(f"Payload 'motor' was {payload['motor']}, but needs to be either 'DiscoballMotor' or 'Motor2'")
 
         # Move motor
-        Motor.TurnStep(direction=direction, steps=revolutions_to_steps(revolutions))
+        Motor.TurnStep(direction=direction, steps=revolutions_to_steps(int(revolutions)))
 
     except:
         logger.error("Issue parsing payload")
+    
 
 if __name__ == '__main__':
 
@@ -132,9 +206,17 @@ if __name__ == '__main__':
     with open("config.yaml", "r") as ymlfile:
         cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
 
-    # Spin up resources
-    Motor1 = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
-    Motor2 = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(3, 4, 5))
+    # global power_strip_name
+    # global discolights_plug_name
+    # global discoball_plug_name 
+
+    # power_strip_name = cfg.power_strip_name
+    # discolights_plug_name = cfg.discolights_plug_name
+    # discoball_plug_name = cfg.discoball_plug_name
+
+    # Spin up resources & init IoT endpoint
+    DiscoballMotor = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
+    TrapdoorMotor = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(3, 4, 5))
 
     io.init_logging(getattr(io.LogLevel, io.LogLevel.NoLogs.name), 'stderr')
     event_loop_group = io.EventLoopGroup(1)
@@ -170,6 +252,7 @@ if __name__ == '__main__':
 
 
     # Infinite loop while waiting for messages on our subscriptions
+    # TODO There's gotta be a better way to create an async listener without doing this.
     try:
         while True:
             time.sleep(600)
@@ -184,6 +267,8 @@ if __name__ == '__main__':
 
         # Reset Motors
         logger.info ("Stopping motors & resetting GPIO")
-        Motor1.Stop()
-        Motor2.Stop()
+        DiscoballMotor.Stop()
+        TrapdoorMotor.Stop()
         GPIO.cleanup()
+        logger.info ("All done - keep on groovin'")
+

@@ -42,7 +42,7 @@ class DRV8825():
         '''
         self.digital_write(self.enable_pin, 0)
             
-    def TurnStep(self, direction, steps, stepDelay=0.001):
+    def TurnStep(self, direction, steps, stepDelay=0.003):
         '''
         Set direction and turn the motor the prescribed number of steps
         '''
@@ -67,7 +67,7 @@ class DRV8825():
             time.sleep(stepDelay)
             self.digital_write(self.step_pin, 0)
             time.sleep(stepDelay)
-        self.Stop()
+        # self.Stop() #Optionally turn off the motor here.  For our use case it was better to manually control this 
 
     def SetMicroStep(self, mode, stepFormat):
         """

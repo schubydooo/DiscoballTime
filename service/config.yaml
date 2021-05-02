@@ -7,3 +7,7 @@ thing_endpoint: a2cu3nec9xctuz-ats.iot.us-west-2.amazonaws.com
 client_id: discoPi
 
 topic: discoPi/+
+
+power_strip_name: TP-LINK_Smart Plug_8817
+discolights_plug_name: Disco Light
+discoball_plug_name: Discoball
