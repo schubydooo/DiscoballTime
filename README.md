@@ -70,4 +70,8 @@ https://python-kasa.readthedocs.io/en/latest/
 
 
 NOTE TO SELF:   
-Add a thread locked variable in order to change states between raised and lower
+Need to add code for 'discoReset' and such so that it's easy to add this as a service and update code
+
+And how to SSH into 
+and then how to sync files 
+and of course how to find the IP addr

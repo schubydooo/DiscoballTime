@@ -130,8 +130,8 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
         # Extract params
         motor_number = alexa.get_slot_value(handler_input=handler_input, slot_name="motor_number")
         motor_direction = alexa.get_slot_value(handler_input=handler_input, slot_name="motor_direction")
-        revolutions = alexa.get_slot_value(handler_input=handler_input, slot_name="revolutions")
-        logger.info(f"motor_number: {motor_number}.  motor_direction: {motor_direction}.    revolutions: {revolutions}")
+        steps = alexa.get_slot_value(handler_input=handler_input, slot_name="revolutions")
+        logger.info(f"motor_number: {motor_number}.  motor_direction: {motor_direction}.    steps: {steps}")
         
         # Validate input
         invalid = []
@@ -139,8 +139,8 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
             invalid.append("motor number")
         if motor_direction not in ['up', 'down']:
             invalid.append("motor direction")
-        if int(revolutions) < 0 or int(revolutions) > 25:
-            invalid.append("revolution count")
+        if int(steps) < 0 or int(steps) >= 5000:
+            invalid.append("step count")
 
         if len(invalid) > 0:
             speak_output = "Sorry homie, that is not a valid"
@@ -154,7 +154,7 @@ class ControlMotorIntentHandler(AbstractRequestHandler):
             payload = {
                 "motor_number": int(motor_number),
                 "motor_direction": motor_direction,
-                "revolutions": int(revolutions)            
+                "steps": int(steps)            
             }
             # Change topic, qos and payload
             response = iot_client.publish(

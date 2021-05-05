@@ -12,12 +12,11 @@ from awsiot import mqtt_connection_builder
 from KasaControl import KasaStrip
 import threading
 
-# This sample uses the Message Broker for AWS IoT to send and receive messages
-# through an MQTT connection. On startup, the device connects to the server,
-# subscribes to a topic, and begins publishing messages to that topic.
-# The device should receive those same messages back from the message broker,
-# since it is subscribed to that same topic.
-
+'''
+This function setups an MQTT connection to AWS IoT to receive messages by subscribing to a topic.
+When messages come through, it handles them appropriately.
+Can raise, lower, or micro adjust the motors connected to the raspberry pi.
+'''
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -29,22 +28,22 @@ logger = logging.getLogger()
 # Globals
 MOTOR_UP = "up"
 MOTOR_DOWN = "down"
-discoball_status_filename = "discoball_state.txt" 
+DISCOBALL_STATUS_FILENAME = "discoball_state.txt" 
 
 with open("config.yaml", "r") as ymlfile:
-    cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
+    config = SimpleNamespace(**yaml.safe_load(ymlfile))
 
-POWER_STRIP_NAME = cfg.power_strip_name
-DISCOLIGHTS_PLUG_NAME = cfg.discolights_plug_name
-DISCOBALL_PLUG_NAME = cfg.discoball_plug_name
+POWER_STRIP_NAME = config.power_strip_name
+DISCOLIGHTS_PLUG_NAME = config.discolights_plug_name
+DISCOBALL_PLUG_NAME = config.discoball_plug_name
 
-lock = threading.Lock()
+LOCK = threading.Lock()
 
 def get_discoball_state():
     '''
     Retrieve the current state of the discoball
     '''
-    with open(discoball_status_filename, "r") as state_file:
+    with open(DISCOBALL_STATUS_FILENAME, "r") as state_file:
         discoball_state = state_file.read()
     return discoball_state
 
@@ -52,7 +51,7 @@ def write_discoball_state(status):
     '''
     Write the status of the discoball position to the file
     '''
-    with open(discoball_status_filename, "w") as state_file:
+    with open(DISCOBALL_STATUS_FILENAME, "w") as state_file:
         state_file.write(status)
     
 def revolutions_to_steps(revolution_count, steps_per_revolution=200):
@@ -99,7 +98,7 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     logger.info(f"MSG: Topic={topic}")
     
     # Use a lock to ensure we only handle incoming requests one at a time
-    lock.acquire()
+    LOCK.acquire()
     if topic == 'discoPi/LowerDiscoball':
         cur_state = get_discoball_state()
         if cur_state != "lowered":
@@ -124,7 +123,7 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     else:
         logger.error("Unimplemented topic")
 
-    lock.release()
+    LOCK.release()
 
 def lower_discoball():
     '''
@@ -176,13 +175,11 @@ def raise_discoball():
     DiscoballMotor.Stop()
     TrapdoorMotor.Stop()
 
-
-
 def control_motor(payload):
     payload = json.loads(payload)
     try: 
         motor = payload['motor_number']
-        revolutions = payload['revolutions']
+        steps = payload['steps']
         direction = payload['motor_direction']
 
         # Set motor
@@ -194,63 +191,72 @@ def control_motor(payload):
             raise TypeError(f"Payload 'motor' was {payload['motor']}, but needs to be either 'DiscoballMotor' or 'Motor2'")
 
         # Move motor
-        Motor.TurnStep(direction=direction, steps=revolutions_to_steps(int(revolutions)))
+        Motor.TurnStep(direction=direction, steps=int(steps))
 
     except:
         logger.error("Issue parsing payload")
     
+def get_config(filename):
+    with open(filename, "r") as ymlfile:
+        return SimpleNamespace(**yaml.safe_load(ymlfile))
 
-if __name__ == '__main__':
-
-    # Read in config
-    with open("config.yaml", "r") as ymlfile:
-        cfg = SimpleNamespace(**yaml.safe_load(ymlfile))
-
-    # global power_strip_name
-    # global discolights_plug_name
-    # global discoball_plug_name 
-
-    # power_strip_name = cfg.power_strip_name
-    # discolights_plug_name = cfg.discolights_plug_name
-    # discoball_plug_name = cfg.discoball_plug_name
-
-    # Spin up resources & init IoT endpoint
+def create_motor_resources():
     DiscoballMotor = DRV8825(dir_pin=13, step_pin=19, enable_pin=12, mode_pins=(0, 1, 2))
     TrapdoorMotor = DRV8825(dir_pin=24, step_pin=18, enable_pin=4, mode_pins=(3, 4, 5))
 
+    return (DiscoballMotor, TrapdoorMotor)
+
+def create_and_subscribe_to_mqtt(config):
+    
     io.init_logging(getattr(io.LogLevel, io.LogLevel.NoLogs.name), 'stderr')
     event_loop_group = io.EventLoopGroup(1)
     host_resolver = io.DefaultHostResolver(event_loop_group)
     client_bootstrap = io.ClientBootstrap(event_loop_group, host_resolver)
 
     mqtt_connection = mqtt_connection_builder.mtls_from_path(
-        endpoint=cfg.thing_endpoint,
-        cert_filepath=cfg.cert,
-        pri_key_filepath=cfg.priv_key,
+        endpoint=config.thing_endpoint,
+        cert_filepath=config.cert,
+        pri_key_filepath=config.priv_key,
         client_bootstrap=client_bootstrap,
-        ca_filepath=cfg.root_ca,
+        ca_filepath=config.root_ca,
         on_connection_interrupted=on_connection_interrupted,
         on_connection_resumed=on_connection_resumed,
-        client_id=cfg.client_id,
+        client_id=config.client_id,
         clean_session=False,
         keep_alive_secs=6)
 
-    logger.info(f"Connecting to {cfg.thing_endpoint} with client ID '{cfg.client_id}'...")
+    logger.info(f"Connecting to {config.thing_endpoint} with client ID '{config.client_id}'...")
     connect_future = mqtt_connection.connect()
     connect_future.result()     # Future.result() waits until a result is available
     logger.info("Connected!")
 
     # Subscribe to topics
-    logger.info(f"Subscribing to topic '{cfg.topic}'...")
+    logger.info(f"Subscribing to topic '{config.topic}'...")
     subscribe_future, packet_id = mqtt_connection.subscribe(
-        topic=cfg.topic,
+        topic=config.topic,
         qos=mqtt.QoS.AT_MOST_ONCE,
         callback=on_message_received)
 
     subscribe_result = subscribe_future.result()
     logger.info(f"Subscribed with {str(subscribe_result['qos'])}")
 
+    return mqtt_connection
 
+def disconnect_mqtt(mqtt_connection):
+    logger.info("\nDisconnecting...")
+    disconnect_future = mqtt_connection.disconnect()
+    disconnect_future.result()
+    logger.info("Disconnected!")
+
+def reset_motors():
+    # Reset Motors
+    logger.info ("Stopping motors & resetting GPIO")
+    DiscoballMotor.Stop()
+    TrapdoorMotor.Stop()
+    GPIO.cleanup()
+    logger.info ("All done - keep on groovin'")
+
+def infinite_loop():
     # Infinite loop while waiting for messages on our subscriptions
     # TODO There's gotta be a better way to create an async listener without doing this.
     try:
@@ -259,16 +265,14 @@ if __name__ == '__main__':
 
     # Cleanup resources on exit
     finally:
-        # Disconnect from AWS IOT
-        logger.info("\nDisconnecting...")
-        disconnect_future = mqtt_connection.disconnect()
-        disconnect_future.result()
-        logger.info("Disconnected!")
+        disconnect_mqtt(mqtt_connection)
+        reset_motors()
 
-        # Reset Motors
-        logger.info ("Stopping motors & resetting GPIO")
-        DiscoballMotor.Stop()
-        TrapdoorMotor.Stop()
-        GPIO.cleanup()
-        logger.info ("All done - keep on groovin'")
+
+if __name__ == '__main__':
+
+    config = get_config('config.yaml')
+    (DiscoballMotor, TrapdoorMotor) = create_motor_resources()
+    mqtt_connection = create_and_subscribe_to_mqtt(config)
+    infinite_loop()
 
